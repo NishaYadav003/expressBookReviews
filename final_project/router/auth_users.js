@@ -17,7 +17,7 @@ const authenticatedUser = (username, password) => {
 };
 
 // Route to register a new user
-regd_users.post('/register', (req, res) => {
+regd_users.post('/register', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -28,13 +28,13 @@ regd_users.post('/register', (req, res) => {
     return res.status(400).json({ message: 'Username already exists' });
   }
 
-  // Add new user to the users array
+  // Add new user to the users array (consider replacing with an async operation if using a database)
   users.push({ username, password });
   return res.status(201).json({ message: 'User registered successfully' });
 });
 
 // Route to login a user and issue a JWT token
-regd_users.post('/login', (req, res) => {
+regd_users.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -52,9 +52,9 @@ regd_users.post('/login', (req, res) => {
 });
 
 // Middleware to authenticate user based on token
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1]; // Assuming "Bearer <token>"
-  
+
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }
@@ -70,7 +70,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Route to add or modify a book review (authenticated users only)
-regd_users.put('/auth/review/:isbn', authenticateToken, (req, res) => {
+regd_users.put('/auth/review/:isbn', authenticateToken, async (req, res) => {
   const { isbn } = req.params;
   const { review } = req.body;
   const { username } = req.user;
@@ -79,7 +79,7 @@ regd_users.put('/auth/review/:isbn', authenticateToken, (req, res) => {
     return res.status(400).json({ message: 'Review is required' });
   }
 
-  // Find the book by ISBN
+  // Find the book by ISBN (consider replacing with an async operation if using a database)
   const book = books[isbn];
 
   if (!book) {
@@ -97,11 +97,11 @@ regd_users.put('/auth/review/:isbn', authenticateToken, (req, res) => {
 });
 
 // Route to delete a book review (authenticated users only)
-regd_users.delete('/auth/review/:isbn', authenticateToken, (req, res) => {
+regd_users.delete('/auth/review/:isbn', authenticateToken, async (req, res) => {
   const { isbn } = req.params;
   const { username } = req.user;  // Get the username from the token
 
-  // Find the book by ISBN
+  // Find the book by ISBN (consider replacing with an async operation if using a database)
   const book = books[isbn];
 
   if (!book) {
@@ -117,7 +117,6 @@ regd_users.delete('/auth/review/:isbn', authenticateToken, (req, res) => {
   delete book.reviews[username];
   return res.status(200).json({ message: 'Review deleted successfully' });
 });
-
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
