@@ -1,22 +1,51 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const session = require('express-session')
+const session = require('express-session');
 const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
 
 const app = express();
 
+// Middleware to parse JSON bodies
 app.use(express.json());
 
-app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
+// Set up session middleware (if needed, otherwise you can remove it)
+app.use(
+  session({
+    secret: 'fingerprint_customer',
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Set to true if using HTTPS
+  })
+);
 
-app.use("/customer/auth/*", function auth(req,res,next){
-//Write the authenication mechanism here
+// Authentication middleware for /customer routes
+app.use('/customer', (req, res, next) => {
+  // Skip authentication for login and register routes
+  if (req.originalUrl.startsWith('/customer/login') || req.originalUrl.startsWith('/customer/register')) {
+    return next();
+  }
+
+  const token = req.headers['authorization']?.split(' ')[1]; // Assuming "Bearer <token>"
+  
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  jwt.verify(token, 'your_secret_key', (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: 'Failed to authenticate token' });
+    }
+
+    req.user = decoded; // Ensure this matches what you use in your routes
+    next();
+  });
 });
- 
-const PORT =5000;
 
-app.use("/customer", customer_routes);
-app.use("/", genl_routes);
+// Define routes
+app.use('/customer', customer_routes);
+app.use('/', genl_routes);
 
-app.listen(PORT,()=>console.log("Server is running"));
+const PORT = 5000;
+
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
